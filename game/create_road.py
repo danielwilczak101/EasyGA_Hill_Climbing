@@ -61,11 +61,11 @@ START_TIME = pygame.time.get_ticks()
 # Functions ------------------------------------------------------- #
 def draw_points():
     if len(all_points) >= 2:
-        pygame.draw.lines(SCREEN, (21,144,124), False, all_points)
+        pygame.draw.lines(SCREEN, (162,174,169), False, all_points)
 
 def redraw():
     SCREEN.fill((22,22,22))
-    fps_label = main_font.render(f"FPS: {int(mainClock.get_fps())}", 1, (255,200,20))
+    fps_label = main_font.render(f"FPS: {int(mainClock.get_fps())}", 1, (162,174,169)
     SCREEN.blit(fps_label, (5,5))
 
     # draw all the points from the all_points list (and make lines)

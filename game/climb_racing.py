@@ -7,6 +7,7 @@ import sys
 import os
 import random
 import time
+import math
 
 # Setup pygame/window ---------------------------------------- #
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (100,32) # windows position
@@ -32,7 +33,7 @@ draw_options = pymunk.pygame_util.DrawOptions(SCREEN)
 # Constantes -------------------------------------------------------#
 NB_CARS = 40 # the number of cars for one generation
 CHASSI_SIZE = (64*2, 39*2) # size of the chassi car size
-BG_COLOR = (66, 227, 245) # color of the background
+BG_COLOR = (143,228,255) # color of the background
 MAIN_DIR = os.path.split(os.path.abspath(__file__))[0]
 
 
@@ -69,7 +70,7 @@ class World:
         thickness = 8 # thickness of the grass
         friction = 2 # friction of the grass
 
-        self.points =[[-20, SCREEN_HEIGHT], [-20, 30], [26, 30], [26, 470], [152, 470], [254, 494], [352, 517],
+        """self.points =[[-20, SCREEN_HEIGHT], [-20, 470 ], [26, 470], [26, 470], [152, 470], [254, 494], [352, 517],
                       [450, 531], [521, 523], [581, 506], [634, 481], [682, 456], [736, 427], [813, 422], [908, 430],
                        [992, 461], [1037, 494], [1115, 530], [1187, 529], [1250, 503], [1275, 490], [1339, 478],
                        [1437, 480], [1513, 504], [1578, 540], [1638, 570], [1721, 563], [1801, 544], [1849, 509],
@@ -79,7 +80,14 @@ class World:
                         [3091, 513], [3128, 471], [3192, 446], [3283, 455], [3329, 484], [3348, 538], [3382, 591],
                         [3442, 598], [3512, 588], [3563, 564], [3631, 522], [3683, 474], [3733, 387], [3790, 336],
                         [3904, 317], [4012, 344], [4078, 429], [4097, 504], [4143, 552], [4200, 571], [4690, 571],
-                        [4691, 70], [4782, 70], [4783, SCREEN_HEIGHT]]
+                        [4691, 70], [4782, 70], [4783, SCREEN_HEIGHT]]"""
+
+
+        self.points = [[-20,SCREEN_HEIGHT]]
+        for x in range(400):
+            self.points.append([(x-1)*20,55*math.sin(x/6)+470])
+
+        self.points[-1][1] = SCREEN_HEIGHT
 
         for i in range(1, len(self.points)):
             body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
@@ -90,10 +98,17 @@ class World:
             space.add(body, floor)
 
 
+
+
     def draw_ground(self):
         """draw the dirt ground"""
-        pygame.draw.polygon(SCREEN, (112, 92, 76), self.points)
 
+        pygame.draw.polygon(SCREEN, (87,68,46), self.points)
+
+
+    def image_display(surface, filename, xy):
+        img = pygame.image.load(filename)
+        surface.blit(img, xy)
 
     def screen_scroll(self, cars): # center the level on the best car
         """Make the screen scroll to allways have the first car center"""
@@ -136,7 +151,7 @@ class Generation:
             if car.score > best_score:
                 best_score = int(car.score)
 
-        score_label = BIG_FONT.render(f"Best score : {best_score}", 1, (255, 157, 0))
+        score_label = BIG_FONT.render(f"Best score : {best_score}", 1, (131,140,140))
         SCREEN.blit(score_label, (5,5))
 
 
@@ -297,7 +312,6 @@ def redraw():
 
     SCREEN.fill(BG_COLOR)
 
-
     offset = world.screen_scroll(generation.cars)
 
     for car in generation.cars:
@@ -306,6 +320,7 @@ def redraw():
     # make the ground
     for pt in world.points:
         pt[0] -= offset
+
     world.draw_ground()
     space.debug_draw(draw_options)
 
@@ -318,7 +333,7 @@ def redraw():
     # drawt the number of Frame/sec
     if draw_fps:
         fps_label = SMALL_FONT.render(f"FPS: {int(mainClock.get_fps())}", 1, (22,22,22))
-        SCREEN.blit(fps_label, (SCREEN_WIDTH-fps_label.get_width(), 5))
+        SCREEN.blit(fps_label, (SCREEN_WIDTH-fps_label.get_width()-10, 5))
 
 
 def buttons():
@@ -356,6 +371,8 @@ def update():
 
 
 # Creation ---------------------------------------------------------#
+
+
 world = World()
 # create the first generation
 create_generation(NB_CARS)
