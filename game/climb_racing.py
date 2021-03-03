@@ -7,6 +7,7 @@ import os
 import random
 import time
 import math
+import perlin
 
 # Setup pygame/window ---------------------------------------- #
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (100,32) # windows position
@@ -75,13 +76,15 @@ class World:
         thickness = 10 # thickness of the grass
         friction = 2 # friction of the grass
 
+
+        noise=perlin.Perlin(25)
+
         # Points to create the map.
         self.points = [[-20,SCREEN_HEIGHT]]
-        for x in range(400):
-            self.points.append([(x-1)*20,55*math.sin(x/6)+470])
+        for x in range(100):
+            self.points.append([(x-1)*60, (noise.valueAt(x) * 200) +470])
 
         self.points[-1][1] = SCREEN_HEIGHT
-
 
         # create the circuit
         for i in range(1, len(self.points)):
