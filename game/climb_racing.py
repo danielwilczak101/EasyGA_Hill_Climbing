@@ -2,7 +2,6 @@
 import pygame
 import pymunk
 import pymunk.pygame_util
-
 import sys
 import os
 import random
@@ -28,12 +27,14 @@ BIG_FONT = pygame.font.SysFont("coopbl", 60)
 draw_fps = True # if true will show the frame / sec
 sf = pymunk.ShapeFilter(group=1) # all object in this group will not collide together
 draw_options = pymunk.pygame_util.DrawOptions(SCREEN)
+draw_options.flags ^= draw_options.DRAW_CONSTRAINTS
+draw_options.flags ^= draw_options.DRAW_COLLISION_POINTS
 
 
 # Constantes -------------------------------------------------------#
-NB_CARS = 40 # the number of cars for one generation
+NB_CARS = 10 # the number of cars for one generation
 CHASSI_SIZE = (64*2, 39*2) # size of the chassi car size
-BG_COLOR = (143,228,255) # color of the background
+SKY_COLOR = (66, 227, 245) # color of the background
 MAIN_DIR = os.path.split(os.path.abspath(__file__))[0]
 
 
@@ -42,15 +43,19 @@ file_path = os.path.join(MAIN_DIR, 'Assets')
 wheel_sprite = pygame.image.load(f"{file_path}/Wheel.png").convert_alpha()
 chassi_sprite = pygame.image.load(f"{file_path}/Body.png").convert_alpha()
 chassi_sprite = pygame.transform.smoothscale(chassi_sprite, (CHASSI_SIZE))
-
-
+    # load and make the dirt surface
+dirt_sprite = pygame.image.load(f"{file_path}/dirt.png").convert_alpha()
+dirt_sprite = pygame.transform.smoothscale(dirt_sprite, (SCREEN_WIDTH//2, SCREEN_WIDTH//2))
+dirt_surface = pygame.Surface((SCREEN_WIDTH, dirt_sprite.get_height()))
+dirt_surface.blit(dirt_sprite, (0,0))
+dirt_surface.blit(dirt_sprite, (dirt_sprite.get_width(),0))
 
 # Classes --------------------------------------------------------- #
 class World:
     """This class create a World with a circuit."""
 
     def __init__(self):
-        self.reset()
+        self.dirt_pos = 0
 
 
     def reset(self):
@@ -67,21 +72,20 @@ class World:
 
     def create_level(self):
         """Convert a list of points to a the level circuit"""
-        thickness = 8 # thickness of the grass
+        thickness = 10 # thickness of the grass
         friction = 2 # friction of the grass
 
-        """self.points =[[-20, SCREEN_HEIGHT], [-20, 470 ], [26, 470], [26, 470], [152, 470], [254, 494], [352, 517],
-                      [450, 531], [521, 523], [581, 506], [634, 481], [682, 456], [736, 427], [813, 422], [908, 430],
-                       [992, 461], [1037, 494], [1115, 530], [1187, 529], [1250, 503], [1275, 490], [1339, 478],
-                       [1437, 480], [1513, 504], [1578, 540], [1638, 570], [1721, 563], [1801, 544], [1849, 509],
-                       [1889, 457], [1923, 432], [2011, 412], [2093, 434], [2173, 466], [2192, 507], [2259, 552],
-                       [2331, 568], [2413, 572], [2475, 559], [2574, 486], [2594, 444], [2601, 418], [2646, 389],
-                       [2707, 383], [2797, 395], [2873, 421], [2902, 464], [2933, 510], [2979, 548], [3026, 540],
-                        [3091, 513], [3128, 471], [3192, 446], [3283, 455], [3329, 484], [3348, 538], [3382, 591],
-                        [3442, 598], [3512, 588], [3563, 564], [3631, 522], [3683, 474], [3733, 387], [3790, 336],
-                        [3904, 317], [4012, 344], [4078, 429], [4097, 504], [4143, 552], [4200, 571], [4690, 571],
-                        [4691, 70], [4782, 70], [4783, SCREEN_HEIGHT]]"""
-
+        # self.points =[[-20, SCREEN_HEIGHT], [-20, 30], [26, 30], [26, 470], [152, 470], [254, 494], [352, 517],
+        #               [450, 531], [521, 523], [581, 506], [634, 481], [682, 456], [736, 427], [813, 422], [908, 430],
+        #                [992, 461], [1037, 494], [1115, 530], [1187, 529], [1250, 503], [1275, 490], [1339, 478],
+        #                [1437, 480], [1513, 504], [1578, 540], [1638, 570], [1721, 563], [1801, 544], [1849, 509],
+        #                [1889, 457], [1923, 432], [2011, 412], [2093, 434], [2173, 466], [2192, 507], [2259, 552],
+        #                [2331, 568], [2413, 572], [2475, 559], [2574, 486], [2594, 444], [2601, 418], [2646, 389],
+        #                [2707, 383], [2797, 395], [2873, 421], [2902, 464], [2933, 510], [2979, 548], [3026, 540],
+        #                 [3091, 513], [3128, 471], [3192, 446], [3283, 455], [3329, 484], [3348, 538], [3382, 591],
+        #                 [3442, 598], [3512, 588], [3563, 564], [3631, 522], [3683, 474], [3733, 387], [3790, 336],
+        #                 [3904, 317], [4012, 344], [4078, 429], [4097, 504], [4143, 552], [4200, 571], [4690, 571],
+        #                 [4691, 70], [4782, 70], [4783, SCREEN_HEIGHT]]
 
         self.points = [[-20,SCREEN_HEIGHT]]
         for x in range(400):
@@ -89,6 +93,8 @@ class World:
 
         self.points[-1][1] = SCREEN_HEIGHT
 
+
+        # create the circuit
         for i in range(1, len(self.points)):
             body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
             floor = pymunk.Segment(body, (self.points[i-1][0], self.points[i-1][1]), (self.points[i][0], self.points[i][1]), thickness)
@@ -97,18 +103,29 @@ class World:
             floor.elasticity = 0.5
             space.add(body, floor)
 
+        # create the points for the sky
+        self.sky_points = self.points
+        self.sky_points.insert(0, ([0,0]))
+        self.sky_points.append([self.points[-1][0]+SCREEN_WIDTH,SCREEN_HEIGHT])
+        self.sky_points.append([self.sky_points[-1][0],0])
 
 
 
-    def draw_ground(self):
+    def draw_ground(self, offset):
         """draw the dirt ground"""
+        self.dirt_pos -= offset
+        if self.dirt_pos < -dirt_surface.get_width():
+            self.dirt_pos += dirt_surface.get_width()
+        SCREEN.blit(dirt_surface, (self.dirt_pos, SCREEN_HEIGHT-dirt_surface.get_height())) #draw the first dirt image
+        SCREEN.blit(dirt_surface, (self.dirt_pos+dirt_surface.get_width(), SCREEN_HEIGHT-dirt_surface.get_height())) #draw the second dirt image
 
-        pygame.draw.polygon(SCREEN, (87,68,46), self.points)
 
 
-    def image_display(surface, filename, xy):
-        img = pygame.image.load(filename)
-        surface.blit(img, xy)
+    def draw_sky(self):
+        """draw the sky"""
+        pygame.draw.polygon(SCREEN, SKY_COLOR, self.sky_points)
+
+
 
     def screen_scroll(self, cars): # center the level on the best car
         """Make the screen scroll to allways have the first car center"""
@@ -170,7 +187,7 @@ class Chassi:
         self.body.position = pos
 
         shape = pymunk.Poly.create_box(self.body, ( self.width, self.height)) # Create a box shape and attach to body
-        shape.color = (BG_COLOR[0], BG_COLOR[1], BG_COLOR[2], 0)
+        shape.color = (SKY_COLOR[0], SKY_COLOR[1], SKY_COLOR[2], 0)
         shape.filter = sf # to not collide with other cars
         shape.friction = 0.3
         # add the chassi to the space
@@ -206,7 +223,7 @@ class Wheel:
         shape = pymunk.Circle(self.body, self.radius)
         shape.elasticity = 0.8
         shape.friction = 1.5
-        shape.color = (BG_COLOR[0], BG_COLOR[1], BG_COLOR[2], 0)
+        shape.color = (SKY_COLOR[0], SKY_COLOR[1], SKY_COLOR[2], 0)
 
         shape.filter = sf # to not collide with other cars
 
@@ -281,6 +298,7 @@ class Car:
             wheel.draw()
 
 
+
     def update_score(self, offset):
         """Update the score of the car"""
         self.score = world.total_offset + self.chassi.body.position.x- self.start_pos[0]
@@ -310,18 +328,20 @@ def rot_center(image, angle, angle_type="radian"):
 def redraw():
     """draw all the stuff on the screen"""
 
-    SCREEN.fill(BG_COLOR)
+    SCREEN.fill(SKY_COLOR)
+
 
     offset = world.screen_scroll(generation.cars)
 
     for car in generation.cars:
         car.update_score(offset)
 
-    # make the ground
+    # make the move the ground
     for pt in world.points:
         pt[0] -= offset
 
-    world.draw_ground()
+    world.draw_ground(offset)
+    world.draw_sky()
     space.debug_draw(draw_options)
 
     # draw the cars
@@ -333,7 +353,7 @@ def redraw():
     # drawt the number of Frame/sec
     if draw_fps:
         fps_label = SMALL_FONT.render(f"FPS: {int(mainClock.get_fps())}", 1, (22,22,22))
-        SCREEN.blit(fps_label, (SCREEN_WIDTH-fps_label.get_width()-10, 5))
+        SCREEN.blit(fps_label, (SCREEN_WIDTH-fps_label.get_width(), 5))
 
 
 def buttons():
@@ -371,8 +391,6 @@ def update():
 
 
 # Creation ---------------------------------------------------------#
-
-
 world = World()
 # create the first generation
 create_generation(NB_CARS)
