@@ -4,10 +4,10 @@ Hill climbing game built in pygame that is managed by a genetic algorithm. The g
 **Controls:**
 Code based for alot of the features but basic input is allowed with:
 
-Up key: Accelerate the cars
-Down key: Decelerate
-Esc Key: Closes game
-Space key: Start new level
+Up key: Accelerate the cars  
+Down key: Decelerate  
+Esc Key: Closes game  
+Space key: Start new level  
 
 **Version 3:** Perlin Noise to make the maps.
 ![](https://github.com/danielwilczak101/Hill_Climbing/blob/media/images/version_3.png)
