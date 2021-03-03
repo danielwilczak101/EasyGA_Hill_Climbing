@@ -1,6 +1,8 @@
 # Hill Climbing with Genetic Algorithms
 Hill climbing game built in pygame that is managed by a genetic algorithm. The genetic algorithm is made and managed by the python  package EasyGA.
 
+EasyGA has not been implimented in the game yet. Im still getting the game quarks worked out.
+
 ### Controls:
 Code based for alot of the features but basic input is allowed with:
 
